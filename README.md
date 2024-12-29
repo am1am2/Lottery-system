@@ -170,3 +170,5 @@ Nginx Web服务器
     定期清理日志文件
     监控服务器资源使用情况
     确保数据文件定期备份
+10.文件目录
+    项目获取以后，需img文件夹和data文件夹，将二维码放入img文件夹，将participants.txt、prizes.txt、winners.txt文档放入
