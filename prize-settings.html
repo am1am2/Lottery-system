@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>奖项设置</title>
+    <style>
+        body {
+            background: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .title {
+            color: #333;
+            margin: 30px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .prize-form {
+            width: 90%;
+            max-width: 600px;
+            background: #e0e0e0;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 8px 8px 16px #bebebe,
+                       -8px -8px 16px #ffffff;
+        }
+
+        .prize-list {
+            margin-bottom: 20px;
+        }
+
+        .prize-item {
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #e0e0e0;
+            box-shadow: inset 3px 3px 6px #bebebe,
+                       inset -3px -3px 6px #ffffff;
+            font-size: 1em;
+            color: #333;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            background: #e0e0e0;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            cursor: pointer;
+            font-size: 1em;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .button:hover {
+            box-shadow: 3px 3px 6px #bebebe,
+                       -3px -3px 6px #ffffff;
+        }
+
+        .button:active {
+            box-shadow: inset 2px 2px 5px #bebebe,
+                       inset -2px -2px 5px #ffffff;
+        }
+
+        .button.delete {
+            background: #ff4444;
+            color: white;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .success-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #e0e0e0;
+            padding: 30px 50px;
+            border-radius: 15px;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.3s ease-in;
+            z-index: 1000;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 480px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .button {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">奖项设置</h1>
+
+    <div class="prize-form">
+        <div id="prizeList" class="prize-list">
+            <!-- 奖项将在这里动态添加 -->
+        </div>
+
+        <button class="button" onclick="addPrize()">添加奖项</button>
+        
+        <div class="nav-buttons">
+            <button class="button" onclick="savePrizes()">保存设置</button>
+            <button class="button" onclick="window.location.href='./index.html'">返回首页</button>
+        </div>
+    </div>
+
+    <div class="success-popup" id="successPopup">
+        保存成功！
+    </div>
+
+    <script>
+        // 页面加载时显示现有奖项
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/prizes');
+                if (!response.ok) throw new Error('网络错误');
+                const prizes = await response.json();
+                
+                const prizeList = document.getElementById('prizeList');
+                prizes.forEach(prize => {
+                    const prizeItem = createPrizeItem(prize.name, prize.count);
+                    prizeList.appendChild(prizeItem);
+                });
+            } catch (error) {
+                console.error('加载奖项失败:', error);
+                alert('加载奖项失败，请刷新页面重试！');
+            }
+        });
+
+        function createPrizeItem(name = '', count = '') {
+            const div = document.createElement('div');
+            div.className = 'prize-item';
+            div.innerHTML = `
+                <div class="input-group">
+                    <input type="text" placeholder="奖项名称" class="prize-name" value="${name}" required>
+                    <input type="number" placeholder="奖项数量" class="prize-count" value="${count}" min="1" required>
+                    <button class="button delete" onclick="this.parentElement.parentElement.remove()">删除</button>
+                </div>
+            `;
+            return div;
+        }
+
+        function addPrize() {
+            const prizeList = document.getElementById('prizeList');
+            prizeList.appendChild(createPrizeItem());
+        }
+
+        async function savePrizes() {
+            const prizes = [];
+            const prizeItems = document.querySelectorAll('.prize-item');
+            
+            prizeItems.forEach(item => {
+                const name = item.querySelector('.prize-name').value.trim();
+                const count = parseInt(item.querySelector('.prize-count').value);
+                
+                if (name && count > 0) {
+                    prizes.push({
+                        name: name,
+                        count: count
+                    });
+                }
+            });
+
+            if (prizes.length === 0) {
+                alert('请至少添加一个奖项！');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/prizes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(prizes)
+                });
+
+                if (!response.ok) throw new Error('网络错误');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const popup = document.getElementById('successPopup');
+                    popup.style.display = 'block';
+                    popup.textContent = result.message;
+                    
+                    setTimeout(() => {
+                        popup.style.display = 'none';
+                    }, 2000);
+                } else {
+                    alert(result.message || '保存失败，请重试！');
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('系统错误，请稍后重试！');
+            }
+        }
+    </script>
+</body>
+</html> 

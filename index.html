@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽奖系统</title>
+    <style>
+        body {
+            background: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .title {
+            color: #333;
+            margin: 40px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .menu-item {
+            background: #e0e0e0;
+            border: none;
+            border-radius: 15px;
+            padding: 30px;
+            font-size: 1.2em;
+            color: #333;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 8px 8px 16px #bebebe,
+                       -8px -8px 16px #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            box-shadow: 10px 10px 20px #bebebe,
+                       -10px -10px 20px #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .menu-item:active {
+            box-shadow: inset 5px 5px 10px #bebebe,
+                       inset -5px -5px 10px #ffffff;
+            transform: translateY(0);
+        }
+
+        .menu-item:last-child {
+            grid-column: 1 / -1;
+            width: calc(50% - 10px);
+            margin: 0 auto;
+        }
+
+        @media (max-width: 480px) {
+            .menu {
+                grid-template-columns: 1fr;
+            }
+            .menu-item:last-child {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">抽奖系统</h1>
+    
+    <div class="menu">
+        <a href="./display.html" class="menu-item">实时展示</a>
+        <a href="./submit.html" class="menu-item">参与报名</a>
+        <a href="./prize-settings.html" class="menu-item">奖项设置</a>
+        <a href="./lottery.html" class="menu-item">开始抽奖</a>
+        <a href="./login.html" class="menu-item">管理页面</a>
+    </div>
+
+</body>
+</html>

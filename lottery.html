@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽奖页面</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #e0e0e0;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .prize-list {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+        }
+
+        .prize-item {
+            margin: 10px 0;
+            padding: 15px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            box-shadow: inset 2px 2px 5px #bebebe,
+                       inset -2px -2px 5px #ffffff;
+            font-size: 24px;
+        }
+
+        .button {
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            background: #e0e0e0;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .button:active {
+            box-shadow: inset 2px 2px 5px #bebebe,
+                       inset -2px -2px 5px #ffffff;
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .winner {
+            color: #2196F3;
+            font-weight: bold;
+        }
+
+        .next-prize {
+            margin: 20px 0;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        .rolling-container {
+            margin: 20px auto;
+            padding: 20px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            box-shadow: inset 2px 2px 5px #bebebe,
+                       inset -2px -2px 5px #ffffff;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .winner-list {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.5s ease;
+        }
+
+        .rolling-name {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2196F3;
+            transition: all 0.3s ease;
+        }
+
+        .previous-winner {
+            font-size: 20px;
+            color: #666;
+            opacity: 0.8;
+            transform: translateY(0);
+            transition: all 0.5s ease;
+        }
+
+        .winner-highlight {
+            font-size: 48px;
+            color: #f44336;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: winnerPulse 1s ease-in-out;
+        }
+
+        .winner-name {
+            display: inline-block;
+            color: #333;
+            transition: color 0.5s ease;
+        }
+
+        .winner-highlight-prize {
+            color: #f44336;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes winnerPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-40px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>抽奖页面</h1>
+        <div class="prize-list">
+            <div class="prize-item">
+                一等奖（1名）：<span id="firstPrize">待抽取</span>
+            </div>
+            <div class="prize-item">
+                二等奖（2名）：<span id="secondPrize">待抽取</span>
+            </div>
+            <div class="prize-item">
+                三等奖（3名）：<span id="thirdPrize">待抽取</span>
+            </div>
+        </div>
+        <div class="next-prize" id="nextPrize"></div>
+        <div class="rolling-container">
+            <div class="winner-list" id="winnerList"></div>
+            <div class="rolling-name" id="rollingName">准备开始</div>
+        </div>
+        <button id="drawBtn" class="button" onclick="startDraw()">开始抽奖</button>
+        <button class="button" onclick="window.location.href='./index.html'">返回首页</button>
+    </div>
+
+    <script>
+        let participants = [];
+        let winners = new Set();
+        let isDrawing = false;
+        let currentPrizeIndex = 0;
+        let rollingInterval;
+        
+        // 按优先级排序的奖项列表
+        const prizes = [
+            { priority: 1, name: "一等奖", count: 1, elementId: "firstPrize", winners: [] },
+            { priority: 2, name: "二等奖", count: 2, elementId: "secondPrize", winners: [] },
+            { priority: 3, name: "三等奖", count: 3, elementId: "thirdPrize", winners: [] }
+        ].sort((a, b) => a.priority - b.priority);
+
+        // 获取参与者数据
+        async function fetchParticipants() {
+            try {
+                const response = await fetch('/api/participants');
+                if (!response.ok) throw new Error('网络错误');
+                return await response.json();
+            } catch (error) {
+                console.error('获取参与者数据失败:', error);
+                return [];
+            }
+        }
+
+        // 随机抽取中奖者
+        function drawWinner(excludeWinners) {
+            const availableParticipants = participants.filter(p => !excludeWinners.has(p.name));
+            if (availableParticipants.length === 0) return null;
+            const index = Math.floor(Math.random() * availableParticipants.length);
+            return availableParticipants[index].name;
+        }
+
+        // 更新下一个要抽取的奖项提示
+        function updateNextPrizeDisplay() {
+            const nextPrizeElement = document.getElementById('nextPrize');
+            if (currentPrizeIndex >= prizes.length) {
+                nextPrizeElement.textContent = '所有奖项已抽取完毕';
+                document.getElementById('drawBtn').disabled = true;
+                return;
+            }
+            const nextPrize = prizes[currentPrizeIndex];
+            nextPrizeElement.textContent = `下一轮将抽取：${nextPrize.name}（${nextPrize.count}名）`;
+        }
+
+        // 开始滚动名字
+        function startRolling() {
+            const rollingName = document.getElementById('rollingName');
+            rollingName.classList.add('rolling');
+            
+            rollingInterval = setInterval(() => {
+                const availableParticipants = participants.filter(p => !winners.has(p.name));
+                if (availableParticipants.length === 0) {
+                    stopRolling();
+                    return;
+                }
+                const randomIndex = Math.floor(Math.random() * availableParticipants.length);
+                rollingName.textContent = availableParticipants[randomIndex].name;
+            }, 50);
+        }
+
+        // 添加获奖者到列表
+        function addWinnerToList(winner) {
+            const winnerList = document.getElementById('winnerList');
+            const winnerElement = document.createElement('div');
+            winnerElement.textContent = winner;
+            winnerElement.classList.add('previous-winner');
+            winnerList.appendChild(winnerElement);
+        }
+
+        // 更新奖项显示
+        function updatePrizeDisplay(elementId, winners) {
+            const element = document.getElementById(elementId);
+            if (winners.length === 0) {
+                element.innerHTML = '待抽取';
+                return;
+            }
+            
+            element.innerHTML = winners.map((winner, index) => {
+                // 所有中奖者使用相同大小，只改变颜色
+                return `<span class="winner-name ${index === winners.length - 1 ? 'winner-highlight-prize' : ''}">${winner}</span>`;
+            }).join('、');
+        }
+
+        // 修改停止滚动函数
+        async function stopRolling() {
+            clearInterval(rollingInterval);
+            const rollingName = document.getElementById('rollingName');
+            rollingName.classList.remove('rolling');
+            
+            // 滚动区域的中奖者依然保持放大效果
+            rollingName.classList.add('winner-highlight');
+            
+            // 等待3秒
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // 移除高亮效果
+            rollingName.classList.remove('winner-highlight');
+            
+            return rollingName.textContent;
+        }
+
+        // 保存中奖记录
+        async function saveWinner(prizeName, winnerName) {
+            try {
+                const response = await fetch('/api/save_winner', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prize: prizeName,
+                        winner: winnerName,
+                        time: new Date().toLocaleString()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('保存中奖记录失败');
+                }
+            } catch (error) {
+                console.error('保存中奖记录失败:', error);
+            }
+        }
+
+        // 修改抽奖函数
+        async function startDraw() {
+            if (isDrawing || currentPrizeIndex >= prizes.length) return;
+            isDrawing = true;
+            const drawBtn = document.getElementById('drawBtn');
+            drawBtn.disabled = true;
+            drawBtn.textContent = '抽奖中...';
+
+            if (participants.length === 0) {
+                participants = await fetchParticipants();
+                if (participants.length === 0) {
+                    alert('暂无参与者数据');
+                    drawBtn.disabled = false;
+                    drawBtn.textContent = '开始抽奖';
+                    isDrawing = false;
+                    return;
+                }
+            }
+
+            const currentPrize = prizes[currentPrizeIndex];
+            const prizeWinners = [];
+            
+            startRolling();
+            
+            for (let i = 0; i < currentPrize.count; i++) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                const winner = await stopRolling();
+                
+                if (winner && !winners.has(winner)) {
+                    winners.add(winner);
+                    prizeWinners.push(winner);
+                    // 保存中奖记录
+                    await saveWinner(currentPrize.name, winner);
+                    // 更新显示
+                    updatePrizeDisplay(currentPrize.elementId, prizeWinners);
+                }
+                
+                if (i < currentPrize.count - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    startRolling();
+                }
+            }
+
+            // 重置滚动区域
+            document.getElementById('rollingName').textContent = '准备开始';
+
+            currentPrizeIndex++;
+            updateNextPrizeDisplay();
+            
+            drawBtn.disabled = false;
+            drawBtn.textContent = '开始抽奖';
+            isDrawing = false;
+        }
+
+        // 页面加载时显示下一个要抽取的奖项
+        updateNextPrizeDisplay();
+    </script>
+</body>
+</html> 

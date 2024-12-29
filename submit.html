@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>活动报名</title>
+    <style>
+        :root {
+            --form-width: min(90%, 500px);
+            --spacing-unit: clamp(15px, 3vw, 30px);
+            --font-size-base: clamp(16px, 2vw, 18px);
+            --font-size-title: clamp(22px, 4vw, 28px);
+            --input-padding: clamp(12px, 2vw, 15px);
+            --border-radius: clamp(12px, 2vw, 20px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #e0e0e0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: var(--spacing-unit);
+            font-family: Arial, sans-serif;
+            font-size: var(--font-size-base);
+        }
+
+        .form-container {
+            background: #e0e0e0;
+            width: var(--form-width);
+            padding: var(--spacing-unit);
+            border-radius: var(--border-radius);
+            box-shadow: 8px 8px 16px #bebebe,
+                       -8px -8px 16px #ffffff;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .title {
+            text-align: center;
+            color: #333;
+            font-size: var(--font-size-title);
+            margin-bottom: calc(var(--spacing-unit) * 1.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            margin: calc(var(--spacing-unit) * 0.8) 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: calc(var(--spacing-unit) * 0.5);
+            color: #333;
+            font-weight: bold;
+            font-size: calc(var(--font-size-base) * 1.1);
+        }
+
+        input {
+            width: 100%;
+            padding: var(--input-padding);
+            border: none;
+            border-radius: calc(var(--border-radius) * 0.8);
+            background: #e0e0e0;
+            box-shadow: inset 3px 3px 6px #bebebe,
+                       inset -3px -3px 6px #ffffff;
+            font-size: var(--font-size-base);
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: inset 4px 4px 8px #bebebe,
+                       inset -4px -4px 8px #ffffff;
+        }
+
+        .button {
+            width: 100%;
+            padding: var(--input-padding);
+            border: none;
+            border-radius: calc(var(--border-radius) * 0.8);
+            background: #e0e0e0;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            cursor: pointer;
+            font-size: var(--font-size-base);
+            color: #333;
+            margin-top: calc(var(--spacing-unit) * 0.8);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            transform: translate(-50%, -50%) scale(0);
+            border-radius: 50%;
+            transition: transform 0.5s;
+        }
+
+        .button:active:after {
+            transform: translate(-50%, -50%) scale(2);
+        }
+
+        .button:active {
+            box-shadow: inset 2px 2px 5px #bebebe,
+                       inset -2px -2px 5px #ffffff;
+            transform: scale(0.98);
+        }
+
+        .success-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #e0e0e0;
+            padding: calc(var(--spacing-unit) * 1.2) calc(var(--spacing-unit) * 2);
+            border-radius: var(--border-radius);
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            display: none;
+            text-align: center;
+            animation: popIn 0.3s ease-out;
+            z-index: 1000;
+            font-size: var(--font-size-base);
+        }
+
+        @keyframes popIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        /* 响应式布局断点 */
+        @media (min-width: 768px) {
+            .form-container {
+                padding: calc(var(--spacing-unit) * 1.5);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-container {
+                width: 100%;
+            }
+        }
+
+        /* 深色模式支持 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #2d2d2d;
+            }
+
+            .form-container {
+                background: #2d2d2d;
+                box-shadow: 8px 8px 16px #252525,
+                           -8px -8px 16px #353535;
+            }
+
+            input, .button {
+                background: #2d2d2d;
+                color: #e0e0e0;
+                box-shadow: inset 3px 3px 6px #252525,
+                           inset -3px -3px 6px #353535;
+            }
+
+            .title, label {
+                color: #e0e0e0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1 class="title">活动报名</h1>
+        <form id="submitForm">
+            <div class="input-group">
+                <label for="name">姓名</label>
+                <input type="text" id="name" name="name" required 
+                       placeholder="请输入您的姓名" 
+                       autocomplete="name">
+            </div>
+
+            <div class="input-group">
+                <label for="phone">手机号码</label>
+                <input type="tel" id="phone" name="phone" required 
+                       placeholder="请输入您的手机号码" 
+                       pattern="^1[3-9]\d{9}$"
+                       autocomplete="tel">
+            </div>
+
+            <button type="submit" class="button">提交报名</button>
+            <button type="button" class="button" onclick="window.location.href='./index.html'">返回首页</button>
+        </form>
+    </div>
+
+    <div class="success-popup" id="successPopup">
+        报名成功！
+    </div>
+
+    <script>
+        document.getElementById('submitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                // 获取表单数据
+                const name = this.querySelector('input[name="name"]').value.trim();
+                const phone = this.querySelector('input[name="phone"]').value.trim();
+                
+                // 验证手机号
+                const phoneRegex = /^1[3-9]\d{9}$/;
+                if (!phoneRegex.test(phone)) {
+                    alert('请输入正确的手机号码！');
+                    return;
+                }
+                
+                console.log('正在提交数据...', { name, phone }); // 添加调试日志
+                
+                const response = await fetch('/api/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        phone: phone
+                    })
+                });
+
+                console.log('服务器响应状态:', response.status); // 添加调试日志
+                
+                const result = await response.json();
+                console.log('服务器返回数据:', result); // 添加调试日志
+                
+                if (result.success) {
+                    // 显示成功提示
+                    const popup = document.getElementById('successPopup');
+                    popup.style.display = 'block';
+                    popup.textContent = result.message || '报名成功！';
+                    
+                    // 2秒后隐藏提示并重置表单
+                    setTimeout(() => {
+                        popup.style.display = 'none';
+                        this.reset();
+                    }, 2000);
+                } else {
+                    alert(result.message || '报名失败，请重试！');
+                }
+            } catch (error) {
+                console.error('提交失败:', error); // 详细的错误日志
+                alert('系统错误，请稍后重试！');
+            }
+        });
+    </script>
+</body>
+</html> 

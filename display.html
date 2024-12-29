@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>参与者展示</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #e0e0e0;
+            font-family: Arial, sans-serif;
+        }
+
+        .qr-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 20px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            z-index: 100;
+        }
+
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 10px;
+        }
+
+        .qr-text {
+            text-align: center;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .bullet-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bullet {
+            position: absolute;
+            white-space: nowrap;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 25px;
+            box-shadow: 3px 3px 6px #bebebe,
+                       -3px -3px 6px #ffffff;
+            animation: moveLeft 15s linear;
+            opacity: 1;
+            right: -300px; /* 从屏幕右侧开始 */
+        }
+
+        @keyframes moveLeft {
+            from {
+                transform: translateX(0);
+            }
+            to {
+                transform: translateX(-2000px); /* 移动距离足够长以确保完全移出屏幕 */
+            }
+        }
+
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+
+        .control-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #e0e0e0;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            cursor: pointer;
+            font-size: 1em;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:active {
+            box-shadow: inset 2px 2px 5px #bebebe,
+                       inset -2px -2px 5px #ffffff;
+        }
+
+        .participant-count {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            box-shadow: 5px 5px 10px #bebebe,
+                       -5px -5px 10px #ffffff;
+            color: #333;
+            font-size: 1.2em;
+            z-index: 100;
+        }
+
+        .control-panel button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="qr-panel">
+        <img src="./img/300.png" alt="二维码" class="qr-code">
+        <div class="qr-text">扫码参与</div>
+    </div>
+
+    <div class="bullet-screen" id="bulletScreen"></div>
+
+    <div class="control-panel">
+        <button id="toggleBtn" class="control-button" onclick="toggleAnimation()">暂停滚动</button>
+        <button class="control-button" onclick="window.location.href='./index.html'">返回首页</button>
+    </div>
+
+    <div class="participant-count">
+        参与人数：<span id="participantCount">0</span>
+    </div>
+
+    <script>
+        let participants = [];
+        let isPlaying = true;
+        let lastUsedHeight = -1;
+        
+        // 创建弹幕
+        function createBullet(text) {
+            const bullet = document.createElement('div');
+            bullet.className = 'bullet';
+            bullet.textContent = text;
+            
+            // 随机高度，但避免重叠
+            const minSpacing = 60; // 最小垂直间距
+            const maxHeight = window.innerHeight - 100;
+            let height;
+            
+            // 尝试找到一个合适的高度
+            do {
+                height = Math.random() * maxHeight;
+            } while (Math.abs(height - lastUsedHeight) < minSpacing);
+            
+            lastUsedHeight = height;
+            bullet.style.top = `${height}px`;
+            
+            document.getElementById('bulletScreen').appendChild(bullet);
+            
+            // 动画结束后移除元素
+            bullet.addEventListener('animationend', () => {
+                bullet.remove();
+            });
+        }
+
+        // 切换动画状态
+        function toggleAnimation() {
+            isPlaying = !isPlaying;
+            const bullets = document.querySelectorAll('.bullet');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            bullets.forEach(bullet => {
+                bullet.style.animationPlayState = isPlaying ? 'running' : 'paused';
+            });
+            
+            toggleBtn.textContent = isPlaying ? '暂停滚动' : '继续滚动';
+        }
+
+        // 获取参与者数据
+        async function fetchParticipants() {
+            try {
+                const response = await fetch('/api/participants');
+                if (!response.ok) throw new Error('网络错误');
+                return await response.json();
+            } catch (error) {
+                console.error('获取参与者数据失败:', error);
+                return [];
+            }
+        }
+
+        // 更新显示
+        async function updateDisplay() {
+            try {
+                participants = await fetchParticipants();
+                document.getElementById('participantCount').textContent = participants.length;
+                
+                if (participants.length > 0 && isPlaying) {
+                    const randomParticipant = participants[Math.floor(Math.random() * participants.length)];
+                    createBullet(randomParticipant.name);
+                }
+            } catch (error) {
+                console.error('更新显示失败:', error);
+            }
+        }
+
+        // 定期更新显示
+        setInterval(updateDisplay, 2500);
+    </script>
+</body>
+</html>
